@@ -44,22 +44,34 @@ async function parseJson(
 }
 
 async function setPrivileges() {
-  const [owner] = await ethers.getSigners();
-
   // eslint-disable-next-line prettier/prettier
   const ethDenverData = ethDenverAddresses as SetPrivilegeData[];
 
+  const batchSize = 1000;
+  const numOfPrivileges = ethDenverData.length;
+
+  const [owner] = await ethers.getSigners();
   const vehicleIdInstance: VehicleId = await ethers.getContractAt(
     'VehicleId',
     contractAddresses[network.name].nfts.VehicleId.proxy
   );
-  
-  // const estimate = await vehicleIdInstance.estimateGas.setPrivileges(ethDenverData.slice(0,7000));
-  // console.log(estimate);
 
-  vehicleIdInstance
-    .connect(owner)
-    .setPrivileges(ethDenverData.slice(0,7000));
+  for (let i = 0; i < numOfPrivileges; i += batchSize) {
+    const batch = ethDenverData.slice(i, i + batchSize);
+
+    // const estimate = await vehicleIdInstance.estimateGas.setPrivileges(batch);
+    // console.log(estimate);
+
+    await vehicleIdInstance
+      .connect(owner)
+      .setPrivileges(batch);
+
+    console.log(
+      `Batch ${i / batchSize + 1} of ${Math.ceil(
+        numOfPrivileges / batchSize
+      )} set`
+    );
+  }
 }
 
 setPrivileges().catch((error) => {
